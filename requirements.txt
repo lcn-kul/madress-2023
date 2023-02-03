@@ -1,0 +1,25 @@
+# Run the following command to install requirements.
+# pip3 install -r requirements.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+
+# local package
+-e .
+
+# project requirements
+librosa
+numpy==1.23.5
+opensmile
+pytorch-lightning
+tensorboard
+tqdm
+
+# torch RTX 3090, A5000, etc.
+torch==1.11.0+cu113
+torchvision==0.12.0+cu113
+torchaudio==0.11.0+cu113
+
+# otherwise use this:
+# torch
+# torchvision
+# torchaudio
+
+
