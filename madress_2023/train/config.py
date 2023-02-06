@@ -1,7 +1,7 @@
 from enum import Enum
 
 # All data is seen X times per epoch to reduce number of checkpointed models.
-TRAIN_TIMES_PER_EPOCH = 5
+TRAIN_TIMES_PER_EPOCH = 1
 VAL_TIMES_PER_EPOCH = 1
 
 class Label(Enum):
@@ -39,11 +39,11 @@ class TrainConfig:
 
 
 TRAIN_ARGS = TrainConfig(
-    max_epochs=25,
+    max_epochs=30,
     batch_size=32,
-    default_lr=3e-4,
+    default_lr=3e-3,
     default_warmup_steps=100,
-    default_weight_decay=3e-2,
+    default_weight_decay=1e-2,
 )
 
 
@@ -57,6 +57,7 @@ class Config:
         use_gender: bool = False,
         use_educ: bool = False,
         use_ad_prob: bool = False, # only relevant for MMSE
+        seed_idx: int = 0, # different seeds for submission
     ):
 
         # Save parameters.
@@ -66,6 +67,7 @@ class Config:
         self.use_gender = use_gender
         self.use_educ = use_educ
         self.use_ad_prob = use_ad_prob
+        self.seed_idx = seed_idx
 
         self.do_ad = label == Label.AD
         self.do_mmse = label == Label.MMSE
@@ -90,52 +92,30 @@ class Config:
 
 AD_CONFIGS = [
     Config(
-        name=f"AD_CONFIG_{int(use_age)}{int(use_gender)}{int(use_educ)}",
+        name=f"AD_CONFIG_SEED{i}",
         dim_hidden=12,
         label=Label.AD,
-        use_age=use_age,
-        use_gender=use_gender,
-        use_educ=use_educ,
+        use_age=True,
+        use_gender=True,
+        use_educ=True,
+        seed_idx=i
     )
-    for use_age, use_gender, use_educ in [
-        (False, False, False), # only audio
-        (True, False, False), # audio + age
-        (False, True, False), # audio + gender
-        (False, False, True), # audio + educ
-        (True, True, True), # audio + all covariates
-    ]
+    for i in range(5)
 ]
 
 MMSE_CONFIGS = [
     Config(
-        name=f"MMSE_CONFIG_{int(use_age)}{int(use_gender)}{int(use_educ)}{int(use_ad_prob)}",
-        dim_hidden=12,
+        name=f"MMSE_CONFIG_SEED{i}",
+        dim_hidden=8,
         label=Label.MMSE,
-        use_age=use_age,
-        use_gender=use_gender,
-        use_educ=use_educ,
-        use_ad_prob=use_ad_prob,
+        use_age=True,
+        use_gender=True,
+        use_educ=True,
+        use_ad_prob=True,
+        seed_idx=i
     )
-    for use_age, use_gender, use_educ, use_ad_prob in [
-        (False, False, False, False), # only audio
-        (True, False, False, False), # audio + age
-        (False, False, True, False), # audio + educ
-        (False, False, False, True), # audio + ad_prob
-        (True, True, True, True), # audio + all covariates
-    ]
+    for i in range(5)
 ]
-
-# AD_CONFIG = Config(
-#     name="AD_CONFIG",
-#     dim_hidden=12,
-#     label=Label.AD,
-# )
-
-# MMSE_CONFIG = Config(
-#     name="MMSE_CONFIG",
-#     dim_hidden=12,
-#     label=Label.MMSE,
-# )
 
 FEAT_SEQ_LEN = 10
 RDM_GREEK_EVERY = 5 # Randomly insert greek samples into the batches, every X samples

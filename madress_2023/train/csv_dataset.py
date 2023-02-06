@@ -2,7 +2,7 @@ import csv
 import torch
 from torch.nn import functional as F
 from torch.utils.data import Dataset
-from typing import Tuple
+from typing import List, Tuple
 
 from madress_2023 import constants
 from madress_2023.constants import Split, STANDARDIZED_CSV_INFO
@@ -19,7 +19,7 @@ class CsvDataset(Dataset):
         do_rdm_greek: bool = False,
         fold = None,
         only_greek: bool = False,
-        ad_model: ModelPL = None,
+        ad_models: List[ModelPL] = None,
         device="cuda",
     ) -> None:
         super().__init__()
@@ -36,9 +36,10 @@ class CsvDataset(Dataset):
             assert do_rdm_greek
         self.do_rdm_greek = do_rdm_greek
 
-        self.ad_model = ad_model
-        if ad_model is not None:
-            self.ad_model.eval()
+        self.ad_models = ad_models
+        if ad_models is not None:
+            for x in ad_models:
+                x.eval()
 
 
         # For printing...
@@ -121,6 +122,11 @@ class CsvDataset(Dataset):
                     egemaps = torch.load(full_path(egemaps_path))
                     self.ram_features_gr.append(egemaps)
 
+        # Cache for AD predictions.
+        self.ad_cache = [None] * len(self.csv_data)
+        if self.do_rdm_greek:
+            self.gr_ad_cache = [None] * len(self.csv_data_gr)
+
         print("Finished.")
 
     def __len__(self):
@@ -128,6 +134,23 @@ class CsvDataset(Dataset):
             return len(self.csv_data_gr) * self.times_per_epoch 
         else:
             return len(self.csv_data) * self.times_per_epoch
+
+    def _get_ad_prob(self, features):
+        assert self.ad_models is not None
+        N = len(self.ad_models)
+        ad_probs = torch.zeros((N,))
+        for idx in range(N):
+            with torch.no_grad():
+                model = self.ad_models[idx].model
+                _feat_ad = tuple(f.unsqueeze(0) for f in features)
+                _f, _ = self.ad_models[idx]._preprocess_batch((_feat_ad, None))
+                out_ad = model.forward(_f)
+                probs = F.softmax(out_ad[0,:], dim=0)
+                ad_prob = probs[1]
+                ad_probs[idx] = ad_prob
+        ad_pred = ad_probs.mean()
+        return ad_pred
+
 
 
     def __getitem__(self, index) -> Tuple:
@@ -140,15 +163,13 @@ class CsvDataset(Dataset):
         features = (egemaps, torch.tensor(age), torch.tensor(gender), torch.tensor(educ))
         labels = (ad, n_mmse)
 
-        if self.ad_model is not None:
-            with torch.no_grad():
-                model = self.ad_model.model
-                _feat_ad = tuple(f.unsqueeze(0) for f in features)
-                _f, _ = self.ad_model._preprocess_batch((_feat_ad, None))
-                out_ad = model.forward(_f)
-                probs = F.softmax(out_ad[0,:], dim=0)
-                ad_prob = probs[1]
-                features = (*features, ad_prob)
+        if self.ad_models is not None:
+            if self.ad_cache[idx] is not None:
+                ad_prob = self.ad_cache[idx] # cached result
+            else:
+                ad_prob = self._get_ad_prob(features)
+                self.ad_cache[idx] = ad_prob
+            features = (*features, ad_prob)
 
         # GR sample injection in minibatches
         if self.do_rdm_greek:
@@ -158,14 +179,13 @@ class CsvDataset(Dataset):
             gr_egemaps = self.ram_features_gr[gr_idx]
             gr_features = (gr_egemaps, torch.tensor(gr_age), torch.tensor(gr_gender), torch.tensor(gr_educ))
             gr_labels = (gr_ad, gr_n_mmse)
-            if self.ad_model is not None:
-                with torch.no_grad():
-                    _feat_ad = tuple(f.unsqueeze(0) for f in gr_features)
-                    _f, _ = self.ad_model._preprocess_batch((_feat_ad, None))
-                    out_ad = model.forward(_f)
-                    probs = F.softmax(out_ad[0,:], dim=0)
-                    ad_prob = probs[1]
-                    gr_features = (*gr_features, ad_prob)
+            if self.ad_models is not None:
+                if self.gr_ad_cache[gr_idx] is not None:
+                    ad_prob = self.gr_ad_cache[gr_idx] # cached result
+                else:
+                    ad_prob = self._get_ad_prob(features)
+                    self.gr_ad_cache[gr_idx] = ad_prob
+                gr_features = (*gr_features, ad_prob)
 
             if self.only_greek:
                 return (gr_features, gr_labels)

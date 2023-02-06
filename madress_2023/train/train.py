@@ -23,7 +23,7 @@ def make_dataloader(
     do_rdm_greek: bool = False,
     fold = None,
     only_greek: bool = False,
-    ad_model = None,
+    ad_models = None,
 ):
 
     # Create DataLoader.
@@ -33,7 +33,7 @@ def make_dataloader(
         do_rdm_greek,
         fold=fold,
         only_greek=only_greek,
-        ad_model=ad_model,
+        ad_models=ad_models,
     )
     csv_dataloader = DataLoader(
         csv_dataset,
@@ -174,10 +174,9 @@ def train_model(
     num_pretrain: int = None,
     config: Config = None,
 ):
-    seed = 42
+    seed = 42 + 100*config.seed_idx
     if pretrain_idx is not None:
-        seed += (config.label.value*num_pretrain) + pretrain_idx
-        # seed += pretrain_idx
+        seed += pretrain_idx
     pl.seed_everything(seed)
 
     if cpus > 5: # avoid having too many cache instances over multiple processes
@@ -197,10 +196,10 @@ def train_model(
         extract_features(gr_val_split, fold)
 
     if config.label == Label.AD: # FIRST TRAIN AD MODEL
-        ad_model = None
+        ad_models = None
     else: # THEN TRAIN MMSE MODEL USING AD PREDICTIONS
-        ad_avg_dir = constants.DIR_MODELS.joinpath("trained_model_AD_CONFIG_111_avg")
-        ad_model = _model_averaging(ad_avg_dir, AD_CONFIGS[-1]).to("cpu")
+        ad_avg_dir = constants.DIR_MODELS.joinpath(f"trained_model_AD_CONFIG_SEED{config.seed_idx}_avg")
+        ad_models = [_model_averaging(ad_avg_dir, x).to("cpu") for x in AD_CONFIGS]
 
 
     # Trainer parameters.
@@ -222,7 +221,7 @@ def train_model(
         times_per_epoch=TRAIN_TIMES_PER_EPOCH,
         do_rdm_greek=do_rdm_greek,
         fold=fold,
-        ad_model=ad_model,
+        ad_models=ad_models,
     )
     val_dl, val_ds = make_dataloader(
         val_split,
@@ -232,7 +231,7 @@ def train_model(
         do_rdm_greek=do_rdm_greek,
         fold=fold,
         only_greek=do_rdm_greek, # validate on greek samples only
-        ad_model=ad_model,
+        ad_models=ad_models,
     )
 
 
@@ -333,7 +332,7 @@ def train_model(
     print("PREDICTIONG: test_ds")
     test_ds = CsvDataset(
         test_split,
-        ad_model=ad_model,
+        ad_models=ad_models,
     )
     test_dl = DataLoader(
         test_ds,
@@ -348,11 +347,11 @@ def train_model(
 def averaging(config: Config, test_split: Split):
     if config.label == Label.AD:
         # Phase 1: train AD model
-        ad_model = None
+        ad_models = None
     else: 
         # Phase 2: use AD model predictions when training MMSE model
-        ad_avg_dir = constants.DIR_MODELS.joinpath("trained_model_AD_CONFIG_111_avg")
-        ad_model = _model_averaging(ad_avg_dir, AD_CONFIGS[-1]).to("cpu")
+        ad_avg_dir = constants.DIR_MODELS.joinpath(f"trained_model_AD_CONFIG_SEED{config.seed_idx}_avg")
+        ad_models = [_model_averaging(ad_avg_dir, x).to("cpu") for x in AD_CONFIGS]
 
     # model averaging
     avg_dir = constants.DIR_MODELS.joinpath(f"trained_model_{config.name}_avg")
@@ -364,7 +363,7 @@ def averaging(config: Config, test_split: Split):
     # Create DataLoader.
     test_ds = CsvDataset(
         test_split,
-        ad_model=ad_model,
+        ad_models=ad_models,
     )
     test_dl = DataLoader(
         test_ds,
