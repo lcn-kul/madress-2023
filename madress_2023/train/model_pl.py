@@ -262,19 +262,21 @@ class ModelPL(pl.LightningModule):
             probs = F.softmax(out[0, :], dim=0)
             ad_prob = probs[1].item()
             if ad_prob >= 0.5:
-                self.predictions.append(1)
+                self.predictions.append((1, ad_prob))
             else:
-                self.predictions.append(0)
+                self.predictions.append((0, ad_prob))
         if self.config.do_mmse:
             mmse = out[0].item()
-            self.predictions.append(mmse)
+            self.predictions.append((mmse, None))
 
 
     def on_predict_end(self) -> None:
         predict_strs = []
-        for value in self.predictions:
+        for value, ad_prob in self.predictions:
             if self.config.do_ad:
-                predict_strs.append("ProbableAD" if value == 1 else "Control")
+                str_dx = "ProbableAD" if value == 1 else "Control"
+                str_prob = "%0.5f" % ad_prob
+                predict_strs.append(f"{str_dx},{str_prob}")
             elif self.config.do_mmse:
                 predict_strs.append("%0.5f" % (value*30.))
 
