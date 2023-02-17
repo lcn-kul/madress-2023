@@ -2,11 +2,11 @@
 
 ## 1. Required Audio Files
 
-- `sample-gr/`: Greek sample audio files for MADReSS challenge
+- `sample-gr/`: Greek sample audio files for ADReSS-M challenge
   [[download]](https://media.talkbank.org/dementia/English/0extra/ADReSS-M-sample-gr.tgz)
-- `train/` : English training audio files for MADReSS challenge
+- `train/` : English training audio files for ADReSS-M challenge
   [[download]](https://media.talkbank.org/dementia/English/0extra/ADReSS-M-train.tgz)
-- `test-gr/` : Greek test audio files for MADReSS challenge
+- `test-gr/` : Greek test audio files for ADReSS-M challenge
   [[download]](https://media.talkbank.org/dementia/English/0extra/ADReSS-M-test-gr.tgz)
 
 *Note: links are protected behind DementiaBank log-in.*

@@ -1,7 +1,7 @@
 # madress-2023
 
 ## 1. Overview
-Source code for LCN submission for MADReSS challenge.
+Source code for LCN submission for ADReSS-M challenge (formerly called MADReSS).
 
 ## 2. Installation
 *Note: this software was developed for Linux.*
