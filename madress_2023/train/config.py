@@ -4,6 +4,9 @@ from enum import Enum
 TRAIN_TIMES_PER_EPOCH = 1
 VAL_TIMES_PER_EPOCH = 1
 
+FEAT_SEQ_LEN = 10
+RDM_GREEK_EVERY = 5 # Randomly insert greek samples into the batches, every X samples
+
 class Label(Enum):
     AD = 0
     MMSE = 1
@@ -116,6 +119,3 @@ MMSE_CONFIGS = [
     )
     for i in range(5)
 ]
-
-FEAT_SEQ_LEN = 10
-RDM_GREEK_EVERY = 5 # Randomly insert greek samples into the batches, every X samples
