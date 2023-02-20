@@ -3,6 +3,26 @@
 ## 1. Overview
 Source code for LCN submission for ADReSS-M challenge (formerly called MADReSS).
 
+The model was trained on 228 English samples of a picture description task and was transferred to Greek using only
+8 samples. We obtained an accuracy of 82.6% for AD detection, a root-mean-square error of 4.345 for cognitive score
+prediction, and ranked 2nd place in the competition out of 24 competitors.
+
+**AD Detection Models (%)**
+[[Link]](/models/submission/ad)
+- Model0 - 76.1%
+- Model1 - 71.7%
+- **Model2 - 82.6%**
+- Model3 - 80.4%
+- Model4 - 73.9%
+
+**Cognitive Score Prediction Models (RMSE)**
+[[Link]](/models/submission/mmse)
+- Model0 - 4.716
+- Model1 - 4.713
+- Model2 - 4.816
+- **Model3 - 4.345**
+- Model4 - 4.837
+
 ## 2. Installation
 *Note: this software was developed for Linux.*
 
