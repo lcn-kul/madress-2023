@@ -8,7 +8,7 @@
 librosa
 numpy==1.23.5
 opensmile
-pytorch-lightning
+pytorch-lightning==1.8.6
 tensorboard
 tqdm
 
