@@ -5,12 +5,12 @@
 -e .
 
 # project requirements
-librosa
+librosa==0.9.2
 numpy==1.23.5
-opensmile
+opensmile==2.4.2
 pytorch-lightning==1.8.6
-tensorboard
-tqdm
+tensorboardX==2.5.1
+tqdm==4.64.1
 
 # torch RTX 3090, A5000, etc.
 torch==1.11.0+cu113
